@@ -1,15 +1,49 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { CritiqueResult } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+
+// 優先順位に基づいたフォールバック用モデルリスト
+const FALLBACK_MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-preview-09-2025",
+  "gemini-flash-latest",
+  "gemini-2.0-flash"
+];
+
+/**
+ * リミットやエラーが発生した際に、順次別のモデルを試行するヘルパー関数
+ */
+async function generateWithFallback(params: Omit<GenerateContentParameters, 'model'>) {
+  let lastError: any = null;
+
+  for (const modelName of FALLBACK_MODELS) {
+    try {
+      console.log(`Trying with model: ${modelName}`);
+      const response = await ai.models.generateContent({
+        ...params,
+        model: modelName,
+      });
+      return response;
+    } catch (error: any) {
+      console.warn(`Model ${modelName} failed:`, error);
+      lastError = error;
+      
+      // 429 (Rate Limit) や 503 (Unavailable) などの場合に次を試す
+      // NotFound (404) の場合も、リスト内のモデルがまだ有効か分からないため次に進む
+      continue;
+    }
+  }
+  throw lastError || new Error("All models failed to generate content.");
+}
 
 export const translateAuto = async (text: string): Promise<string> => {
   if (!text.trim()) return "";
   
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await generateWithFallback({
       contents: `Translate the following English message into natural, conversational Japanese. 
       Maintain any paragraph breaks and the original tone (e.g., formal/informal). 
       Text: "${text}"`,
@@ -20,14 +54,13 @@ export const translateAuto = async (text: string): Promise<string> => {
     return response.text || "翻訳に失敗しました";
   } catch (error) {
     console.error("Auto Translation Error:", error);
-    return "エラーが発生しました";
+    return "エラーが発生しました。時間を置いて再度お試しください。";
   }
 };
 
 export const translateAndCritique = async (japaneseText: string, contextText: string): Promise<CritiqueResult> => {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await generateWithFallback({
       contents: `Context (Partner's message in English): "${contextText}"
       My Reply (in Japanese): "${japaneseText}"`,
       config: {
