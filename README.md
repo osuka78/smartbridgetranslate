@@ -1,20 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
-# Run and deploy your AI Studio app
+# SmartBridge Translation App
 
-This contains everything you need to run your app locally.
+Gemini AIを活用した、高度な翻訳・コミュニケーション支援ツールです。
 
-View your app in AI Studio: https://ai.studio/apps/drive/1CO1ATgQsK8bxjQhyup3kahfG8eydCmV6
+## 公開方法
 
-## Run Locally
+### 方法1: Vercel / Netlify (推奨: React版)
+1. GitHubでリポジトリを作成し、ファイルをアップロードします。
+2. ホスティングサービスにログインし、リポジトリをインポートします。
+3. `Environment Variables` に `API_KEY` を設定してください。
 
-**Prerequisites:**  Node.js
+### 方法2: Streamlit Cloud (Python版)
+1. GitHubリポジトリに `streamlit_app.py` と `requirements.txt` が含まれていることを確認します。
+2. [Streamlit Cloud](https://share.streamlit.io/) にアクセスし、リポジトリをデプロイします。
+3. **重要**: デプロイ設定の **Advanced settings > Secrets** に以下の形式でAPIキーを入力してください。
+   ```toml
+   API_KEY = "あなたのGemini APIキー"
+   ```
 
+## ローカルでの実行方法 (React版)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+npm run dev
+```
+
+## ローカルでの実行方法 (Streamlit版)
+
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
